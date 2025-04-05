@@ -6,8 +6,8 @@ export function Greet(arg1) {
   return window['go']['main']['App']['Greet'](arg1);
 }
 
-export function OpenDirectory(arg1) {
-  return window['go']['main']['App']['OpenDirectory'](arg1);
+export function OpenDirectory() {
+  return window['go']['main']['App']['OpenDirectory']();
 }
 
 export function ScanCmsPath(arg1) {

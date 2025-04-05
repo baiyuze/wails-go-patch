@@ -1,14 +1,14 @@
 {
   "$schema": "https://wails.io/schemas/config.v2.json",
-  "name": "lmes-patch",
-  "outputfilename": "lmes补丁安装器",
+  "name": "lmes补丁安装",
+  "outputfilename": "lmes补丁安装",
   "frontend:install": "npm install",
   "frontend:build": "npm run build",
   "frontend:dev:watcher": "npm run dev",
   "frontend:dev:serverUrl": "auto",
   "author": {
-    "name": "阮伟光",
-    "email": "undefined"
+    "name": "光光",
+    "email": "rwgweiguang@163.com"
   },
   "build": {
     "macOS": {

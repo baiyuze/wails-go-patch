@@ -68,13 +68,10 @@ export default function Result() {
     },
   ];
 
-  useEffect(() => {
-    console.log(dataSource, "dataSource");
-  });
   return (
     <div className={styles.box}>
       <header className={styles.header}>
-        <Button onClick={() => navigate("/")}>返回</Button>
+        <Button style={{ marginLeft: 10 }} size="small" onClick={() => navigate("/")}>返回</Button>
         <h3>扫描结果</h3>
         <span></span>
       </header>

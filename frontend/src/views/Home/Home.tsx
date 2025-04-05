@@ -23,6 +23,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [path, setPath] = useState("");
   const navigate = useNavigate();
+  const PathKey = "ALL_SCAN"
 
   useEffect(throttle(() => {
     const path = localStorage.getItem("cmsPath");
@@ -40,19 +41,17 @@ function App() {
 
   const handleSelect = async () => {
     // 处理扫描逻辑
-    const dir = await OpenDirectory("测试");
-    localStorage.setItem("cmsPath", dir);
-    setCmsPath(dir);
+    const dir = await OpenDirectory();
+    if (dir === "shellItem is nil" || dir.includes('nil') || !dir) {
+      setCmsPath("");
+      return message.error("请至少选择一个盘符")
+    } else {
+      localStorage.setItem("cmsPath", dir);
+      setCmsPath(dir);
+    }
   };
 
-  const onScan = async () => {
-    if (loading) {
-      return message.warning("正在扫描中，请稍后");
-    }
-    if (cmsPath === "" || cmsPath === undefined) {
-      message.error("请选择CMS所在文件夹");
-      return;
-    }
+  const startScan = async () => {
     setLoading(true);
     const json = await ScanCmsPath(cmsPath);
     setLoading(false);
@@ -65,6 +64,19 @@ function App() {
       console.error("JSON解析错误:", error);
       message.error("JSON解析错误");
     }
+  }
+
+  const onScan = async () => {
+    if (loading) {
+      return message.warning("正在扫描中，请稍后");
+    }
+    if (cmsPath === "" || cmsPath === undefined) {
+      message.error("请至少选择一个盘符");
+      return;
+    }
+    startScan()
+
+
   };
 
   return (

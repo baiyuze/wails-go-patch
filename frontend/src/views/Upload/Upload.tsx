@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import styles from "./Upload.module.scss";
 import Table from "@/components/Table/Table";
-import { Button, Spin } from "antd";
+import { Alert, Button, Modal, notification, Spin } from "antd";
 import { useNavigate } from "react-router";
 import { InboxOutlined } from "@ant-design/icons";
 import type { UploadProps } from "antd";
@@ -17,6 +17,8 @@ import { useSearchParams } from "react-router-dom";
 const { Dragger } = Upload;
 export default function Result() {
   const navigate = useNavigate();
+
+
   const [spinning, setSpinning] = useState(false);
   const [searchParams] = useSearchParams();
   const targetPath = searchParams.get("path");
@@ -46,28 +48,34 @@ export default function Result() {
       setSpinning(true);
 
       try {
-        const err = await UnzipFile({
+        await UnzipFile({
           filename: file.name,
           data: fileStr,
           targetPath: targetPath || "",
         });
+        const t = setTimeout(() => {
+          setSpinning(false);
+          Modal.success({
+            title: <div style={{ textAlign: "left" }}>提示</div>,
+            content: <div style={{ textAlign: "left", fontSize: 16 }}>安装成功</div>,
+            okText: "知道了"
+          });
+          clearTimeout(t)
+        }, 300);
       } catch (error) {
-        console.log(error)
+        message.error(error as string)
+        setSpinning(false);
       }
-      setSpinning(false);
-      message.success("更新成功");
+
       return false;
     },
-    onDrop(e) {
-      console.log("Dropped files", e.dataTransfer.files);
-    },
+
   };
-  useEffect(() => { });
   return (
     <div className={styles.upload}>
       <Spin spinning={spinning} fullscreen />
       <header className={styles.header}>
-        <Button onClick={() => navigate("/result")}>返回</Button>
+        <Button style={{ marginLeft: 10 }} size="small" onClick={() => navigate("/result")}>返回</Button>
         <h3>版本：CMS {version}</h3>
         <span></span>
       </header>

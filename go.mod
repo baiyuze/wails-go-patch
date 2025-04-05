@@ -1,11 +1,14 @@
 module lmes-patch
 
-go 1.23
+go 1.23.0
+
+toolchain go1.24.1
 
 require (
 	github.com/evilsocket/islazy v1.11.0
 	github.com/otiai10/copy v1.14.1
 	github.com/wailsapp/wails/v2 v2.10.1
+	golang.org/x/sys v0.32.0
 )
 
 require (
@@ -35,7 +38,6 @@ require (
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 )
 

@@ -11,9 +11,12 @@ import (
 	"strings"
 	"time"
 
+	rt "runtime"
+
 	"github.com/evilsocket/islazy/zip"
 	cp "github.com/otiai10/copy"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
+	"golang.org/x/sys/windows"
 )
 
 // App struct
@@ -38,7 +41,7 @@ func (a *App) Greet(name string) string {
 }
 
 // 打开文件夹
-func (a *App) OpenDirectory(name string) string {
+func (a *App) OpenDirectory() string {
 	path, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{})
 	if err != nil {
 		return err.Error()
@@ -71,7 +74,7 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 			return err
 		}
 		elapsed := time.Since(start)
-		if elapsed > 300*time.Millisecond {
+		if elapsed > 150*time.Millisecond {
 			start = time.Now()
 			runtime.EventsEmit(a.ctx, "SCAN_PATH", path)
 		}
@@ -120,6 +123,7 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 	return string(data)
 }
 
+// 解压补丁文件
 func (a *App) UnzipFile(fileObj dto.FileData) error {
 	zipPath, err := utils.ReceiveFileBlob(fileObj)
 	if err != nil {
@@ -138,7 +142,6 @@ func (a *App) UnzipFile(fileObj dto.FileData) error {
 
 		return err
 	}
-	// 以下window可以不执行
 	unzipPath := filepath.Join(targetPath, fileObj.Filename)
 	unzipDir := strings.Split(unzipPath, ".zip")[0]
 	slashUnzipDir, err := utils.ToSlashByPath(unzipDir)
@@ -146,19 +149,43 @@ func (a *App) UnzipFile(fileObj dto.FileData) error {
 		runtime.LogError(a.ctx, err.Error())
 		return err
 	}
-
-	cpErr := cp.Copy(slashUnzipDir, targetPath)
-
-	if cpErr != nil {
-		runtime.LogError(a.ctx, cpErr.Error())
-		return cpErr
+	if utils.FolderExists(slashUnzipDir) {
+		reErr := os.RemoveAll(slashUnzipDir)
+		if reErr != nil {
+			runtime.LogError(a.ctx, reErr.Error())
+			return reErr
+		}
+		return fmt.Errorf("安装包格式不正确，请检查")
 	}
-	// 删除之前removeUnzipDir
-	reErr := os.RemoveAll(slashUnzipDir)
+	// 以下window可以不执行
+	if rt.GOOS != "windows" {
+		cpErr := cp.Copy(slashUnzipDir, targetPath)
 
-	if reErr != nil {
-		runtime.LogError(a.ctx, reErr.Error())
-		return reErr
+		if cpErr != nil {
+			runtime.LogError(a.ctx, cpErr.Error())
+			return cpErr
+		}
+		// 删除之前removeUnzipDir
+		reErr := os.RemoveAll(slashUnzipDir)
+
+		if reErr != nil {
+			runtime.LogError(a.ctx, reErr.Error())
+			return reErr
+		}
 	}
+
 	return nil
+}
+
+func GetDiskAddresses() []string {
+	var disks []string
+	drivesBitmask, _ := windows.GetLogicalDrives()
+
+	for i := 0; i < 26; i++ {
+		if drivesBitmask&(1<<uint(i)) != 0 {
+			drive := fmt.Sprintf("%c:\\", 'A'+i)
+			disks = append(disks, drive)
+		}
+	}
+	return disks
 }

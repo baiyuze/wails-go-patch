@@ -47,7 +47,6 @@ func ReceiveFileBlob(file dto.FileData) (string, error) {
 	if err != nil {
 		return zipPath, fmt.Errorf("无法创建目录: %v", err)
 	}
-	fmt.Println(toSlashSavePath, "savePathsavePath")
 	// 写入文件
 	err = os.WriteFile(toSlashSavePath, data, 0644)
 	if err != nil {

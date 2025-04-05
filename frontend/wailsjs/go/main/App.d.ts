@@ -4,7 +4,7 @@ import {dto} from '../models';
 
 export function Greet(arg1:string):Promise<string>;
 
-export function OpenDirectory(arg1:string):Promise<string>;
+export function OpenDirectory():Promise<string>;
 
 export function ScanCmsPath(arg1:string):Promise<string>;
 
