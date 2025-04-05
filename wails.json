@@ -1,0 +1,26 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "lmes-patch",
+  "outputfilename": "lmes补丁安装器",
+  "frontend:install": "npm install",
+  "frontend:build": "npm run build",
+  "frontend:dev:watcher": "npm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "阮伟光",
+    "email": "undefined"
+  },
+  "build": {
+    "macOS": {
+      "icon": "assets/icon.icns",
+      "dmg": true,
+      "appID": "com.myapp.wails"
+    },
+    "windows": {
+      "arch": "x64"
+    },
+    "linux": {
+      "arch": "amd64"
+    }
+  }
+}
