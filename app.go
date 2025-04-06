@@ -9,17 +9,16 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
-	rt "runtime"
-
 	"github.com/evilsocket/islazy/zip"
-	cp "github.com/otiai10/copy"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/sys/windows"
 )
 
 // App struct
+
 type App struct {
 	ctx context.Context
 }
@@ -52,44 +51,55 @@ func (a *App) OpenDirectory() string {
 // 扫描cms路径
 
 func (a *App) ScanCmsPath(cmsPath string) string {
-	// absPath, err := filepath.Abs(cmsPath)
-	// if err != nil {
-	// 	return err.Error()
-	// }
-	// absPath = filepath.ToSlash(absPath)
 	cmsPath, err := utils.ToSlashByPath(cmsPath)
 	if err != nil {
 		return err.Error()
 	}
+	var wg sync.WaitGroup
 	cmsPaths := []string{}
 	cmsFilterPaths := []string{}
 	cmsContents := []map[string]string{}
-	start := time.Now()
-	error := filepath.WalkDir(cmsPath, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			if os.IsPermission(err) {
-				fmt.Printf("跳过无权限目录:%s\n", path)
-				return nil
-			}
-			return err
-		}
-		elapsed := time.Since(start)
-		if elapsed > 150*time.Millisecond {
-			start = time.Now()
-			runtime.EventsEmit(a.ctx, "SCAN_PATH", path)
-		}
-		slashPath, err := utils.ToSlashByPath(path)
-		if err != nil {
-			return err
-		}
-		if strings.Contains(slashPath, "version.json") {
-			cmsPaths = append(cmsPaths, slashPath)
-		}
-		return nil
-	})
-	if error != nil {
-		return error.Error()
+	resultCh := make(chan string)
+	cmsFilePaths := []string{}
+
+	matchs, err := filepath.Glob(filepath.Join(cmsPath, "/*"))
+	if err != nil {
+		return err.Error()
 	}
+	for _, match := range matchs {
+		info, err := os.Stat(match)
+		if err != nil {
+			return err.Error()
+		}
+		if info.IsDir() {
+			wg.Add(1)
+			go a.walkDir(match, resultCh, &wg)
+		}
+	}
+	go func() {
+		wg.Wait()
+		close(resultCh) // 所有任务完成后关闭通道
+	}()
+
+	for _, match := range matchs {
+		info, err := os.Stat(match)
+		if err != nil {
+			return err.Error()
+		}
+		if !info.IsDir() {
+			cmsFilePaths = append(cmsFilePaths, match)
+		}
+	}
+	for path := range resultCh {
+		cmsPaths = append(cmsPaths, path)
+	}
+
+	for _, filePath := range cmsFilePaths {
+		if strings.Contains(filePath, "version.json") {
+			cmsPaths = append(cmsPaths, filePath)
+		}
+	}
+
 	// 读取文件，校验文件是否是cms的文件
 	for _, path := range cmsPaths {
 		parentPath := filepath.Dir(path)
@@ -99,8 +109,8 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		if utils.FolderExists(widgetDir) {
 			cmsFilterPaths = append(cmsFilterPaths, path)
 		}
-		// cmsFilterPaths = append(cmsFilterPaths, parentPath)
 	}
+
 	for _, path := range cmsFilterPaths {
 		content, redErr := os.ReadFile(path)
 		if redErr != nil {
@@ -113,7 +123,6 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 			"ext":        filepath.Ext(path), // ".json
 			"content":    string(content),
 		})
-		fmt.Printf("%+v", cmsContents)
 	}
 
 	data, err := json.Marshal(cmsContents)
@@ -121,6 +130,37 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		return err.Error()
 	}
 	return string(data)
+}
+
+func (a *App) walkDir(childPath string, resultCh chan<- string, wg *sync.WaitGroup) error {
+	defer wg.Done()
+	start := time.Now()
+
+	error := filepath.WalkDir(childPath, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			if os.IsPermission(err) {
+				fmt.Printf("跳过无权限目录:%s\n", path)
+				return nil
+			}
+			return err
+		}
+		elapsed := time.Since(start)
+		if elapsed > 300*time.Millisecond {
+			start = time.Now()
+			runtime.EventsEmit(a.ctx, "SCAN_PATH", path)
+		}
+		slashPath, err := utils.ToSlashByPath(path)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(slashPath, "version.json") {
+			resultCh <- slashPath
+		}
+		return nil
+	})
+
+	return error
+
 }
 
 // 解压补丁文件
@@ -135,8 +175,8 @@ func (a *App) UnzipFile(fileObj dto.FileData) error {
 		runtime.LogError(a.ctx, err.Error())
 		return err
 	}
-	// window直接解压打动对应文件夹，mac会新建一个文件夹，把内容放进去
 	_, err = zip.Unzip(zipPath, targetPath)
+
 	if err != nil {
 		runtime.LogError(a.ctx, err.Error())
 
@@ -157,22 +197,23 @@ func (a *App) UnzipFile(fileObj dto.FileData) error {
 		}
 		return fmt.Errorf("安装包格式不正确，请检查")
 	}
-	// 以下window可以不执行
-	if rt.GOOS != "windows" {
-		cpErr := cp.Copy(slashUnzipDir, targetPath)
 
-		if cpErr != nil {
-			runtime.LogError(a.ctx, cpErr.Error())
-			return cpErr
-		}
-		// 删除之前removeUnzipDir
-		reErr := os.RemoveAll(slashUnzipDir)
+	// 暂时不处理
+	// if rt.GOOS != "windows" {
+	// 	cpErr := cp.Copy(slashUnzipDir, targetPath)
 
-		if reErr != nil {
-			runtime.LogError(a.ctx, reErr.Error())
-			return reErr
-		}
-	}
+	// 	if cpErr != nil {
+	// 		runtime.LogError(a.ctx, cpErr.Error())
+	// 		return cpErr
+	// 	}
+	// 	// 删除之前removeUnzipDir
+	// 	reErr := os.RemoveAll(slashUnzipDir)
+
+	// 	if reErr != nil {
+	// 		runtime.LogError(a.ctx, reErr.Error())
+	// 		return reErr
+	// 	}
+	// }
 
 	return nil
 }
