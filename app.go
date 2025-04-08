@@ -14,7 +14,6 @@ import (
 
 	"github.com/evilsocket/islazy/zip"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
-	"golang.org/x/sys/windows"
 )
 
 // App struct
@@ -216,17 +215,4 @@ func (a *App) UnzipFile(fileObj dto.FileData) error {
 	// }
 
 	return nil
-}
-
-func GetDiskAddresses() []string {
-	var disks []string
-	drivesBitmask, _ := windows.GetLogicalDrives()
-
-	for i := 0; i < 26; i++ {
-		if drivesBitmask&(1<<uint(i)) != 0 {
-			drive := fmt.Sprintf("%c:\\", 'A'+i)
-			disks = append(disks, drive)
-		}
-	}
-	return disks
 }
