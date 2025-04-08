@@ -18,7 +18,7 @@ export default function Result() {
           item.id = item.id || Math.random().toString(36).substr(2, 9); // 生成随机i
           Object.assign(item, content);
         });
-        // setDataSource(cmsData);
+        setDataSource(cmsData);
       }
     } catch (error) {
       console.error("JSON解析错误:", error);
