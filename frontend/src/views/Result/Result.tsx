@@ -18,7 +18,7 @@ export default function Result() {
           item.id = item.id || Math.random().toString(36).substr(2, 9); // 生成随机i
           Object.assign(item, content);
         });
-        setDataSource(cmsData);
+        // setDataSource(cmsData);
       }
     } catch (error) {
       console.error("JSON解析错误:", error);
@@ -31,6 +31,14 @@ export default function Result() {
       key: "Name",
       render: () => {
         return "CMS";
+      },
+    },
+    {
+      title: "文件路径",
+      dataIndex: "parentPath",
+      key: "parentPath",
+      render: (text: string, record: any) => {
+        return record.parentPath || "-";
       },
     },
     {
@@ -71,12 +79,23 @@ export default function Result() {
   return (
     <div className={styles.box}>
       <header className={styles.header}>
-        <Button style={{ marginLeft: 10 }} size="small" onClick={() => navigate("/")}>返回</Button>
+        <Button
+          style={{ marginLeft: 10 }}
+          size="small"
+          onClick={() => navigate("/")}
+        >
+          返回
+        </Button>
         <h3>扫描结果</h3>
         <span></span>
       </header>
-      <div>
-        <Table isHidePage={true} data={dataSource} columns={columns} />
+      <div style={{ height: "calc(100% - 30px)", width: "calc(100% - 35px)" }}>
+        <Table
+          isHidePage={true}
+          data={dataSource}
+          columns={columns}
+          rowKey="BuildDate"
+        />
       </div>
     </div>
   );

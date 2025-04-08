@@ -64,6 +64,7 @@ const BaseTable = (props: PropType, ref: Ref<any>) => {
   useEffect(() => {
     if (props.data) {
       setData(props.data);
+      getTableHeight();
     }
   }, [props.data]);
   useEffect(() => {
