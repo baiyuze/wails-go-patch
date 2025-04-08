@@ -37,6 +37,7 @@ export default function Result() {
       title: "文件路径",
       dataIndex: "parentPath",
       key: "parentPath",
+      width: 300,
       render: (text: string, record: any) => {
         return record.parentPath || "-";
       },
