@@ -19,32 +19,34 @@ import { Navigate, Route, useNavigate } from "react-router";
 import { throttle } from "lodash";
 
 function App() {
-  const [cmsPath, setCmsPath] = useState("C:");
+  const [cmsPath, setCmsPath] = useState("");
   const [loading, setLoading] = useState(false);
   const [path, setPath] = useState("");
   const navigate = useNavigate();
-  const PathKey = "ALL_SCAN"
+  const PathKey = "ALL_SCAN";
 
-  useEffect(throttle(() => {
-    const path = localStorage.getItem("cmsPath");
-    if (path) {
-      setCmsPath(path);
-    }
-  }, 100), []);
+  useEffect(
+    throttle(() => {
+      const path = localStorage.getItem("cmsPath");
+      if (path) {
+        setCmsPath(path);
+      }
+    }, 100),
+    []
+  );
 
   useEffect(() => {
     EventsOn("SCAN_PATH", (path) => {
-      setPath(path)
-    })
-
-  })
+      setPath(path);
+    });
+  });
 
   const handleSelect = async () => {
     // 处理扫描逻辑
     const dir = await OpenDirectory();
-    if (dir === "shellItem is nil" || dir.includes('nil') || !dir) {
+    if (dir === "shellItem is nil" || dir.includes("nil") || !dir) {
       setCmsPath("");
-      return message.error("请至少选择一个盘符")
+      return message.error("请至少选择一个盘符");
     } else {
       localStorage.setItem("cmsPath", dir);
       setCmsPath(dir);
@@ -64,7 +66,7 @@ function App() {
       console.error("JSON解析错误:", error);
       message.error("JSON解析错误");
     }
-  }
+  };
 
   const onScan = async () => {
     if (loading) {
@@ -74,9 +76,7 @@ function App() {
       message.error("请至少选择一个盘符");
       return;
     }
-    startScan()
-
-
+    startScan();
   };
 
   return (
