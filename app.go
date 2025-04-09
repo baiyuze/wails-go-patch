@@ -128,7 +128,7 @@ var sem = make(chan struct{}, 20)
 
 func (a *App) walkDirConcurrent(path string, resultCh chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
-
+	runtime.EventsEmit(a.ctx, "SCAN_PATH", path)
 	// 控制最大并发
 	sem <- struct{}{}
 	defer func() { <-sem }()
@@ -150,7 +150,6 @@ func (a *App) walkDirConcurrent(path string, resultCh chan<- string, wg *sync.Wa
 		if entry.IsDir() {
 			// 可选：跳过 node_modules、.git 等
 			if entry.Name() == "node_modules" || entry.Name() == ".git" {
-				runtime.EventsEmit(a.ctx, "SCAN_PATH", path)
 				continue
 			}
 			wg.Add(1)
