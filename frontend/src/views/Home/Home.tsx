@@ -84,7 +84,15 @@ function App() {
       <div onClick={onScan} className={styles.actionButtons}>
         {loading ? "正在扫描中..." : "开始扫描"}
       </div>
-      <div style={{ color: "#555", height: 30, fontSize: 13, marginTop: 20 }}>
+      <div
+        style={{
+          color: "#555",
+          height: 30,
+          fontSize: 13,
+          marginTop: 20,
+          marginLeft: -37,
+        }}
+      >
         {path}
       </div>
 
