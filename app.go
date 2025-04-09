@@ -70,9 +70,11 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		if err != nil {
 			return err.Error()
 		}
-		if info.IsDir() {
+		if info.IsDir() && (info.Name() != ".git" || info.Name() != "node_modules") {
 			wg.Add(1)
 			go a.walkDir(match, resultCh, &wg)
+		} else {
+			cmsFilePaths = append(cmsFilePaths, match)
 		}
 	}
 	go func() {
@@ -80,15 +82,6 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		close(resultCh) // 所有任务完成后关闭通道
 	}()
 
-	for _, match := range matchs {
-		info, err := os.Stat(match)
-		if err != nil {
-			return err.Error()
-		}
-		if !info.IsDir() {
-			cmsFilePaths = append(cmsFilePaths, match)
-		}
-	}
 	for path := range resultCh {
 		cmsPaths = append(cmsPaths, path)
 	}
@@ -129,6 +122,51 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		return err.Error()
 	}
 	return string(data)
+}
+
+var sem = make(chan struct{}, 10)
+
+func (a *App) walkDirConcurrent(path string, resultCh chan<- string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	// 控制最大并发
+	sem <- struct{}{}
+	defer func() { <-sem }()
+
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		if os.IsPermission(err) {
+			fmt.Printf("跳过无权限目录: %s\n", path)
+			return
+		}
+		fmt.Printf("读取目录出错: %s, 错误: %v\n", path, err)
+		return
+	}
+
+	for _, entry := range entries {
+		fullPath := filepath.Join(path, entry.Name())
+
+		// 处理目录
+		if entry.IsDir() {
+			// 可选：跳过 node_modules、.git 等
+			if entry.Name() == "node_modules" || entry.Name() == ".git" {
+				continue
+			}
+			wg.Add(1)
+			go a.walkDirConcurrent(fullPath, resultCh, wg)
+			continue
+		}
+
+		// 处理文件
+		slashPath, err := utils.ToSlashByPath(fullPath)
+		if err != nil {
+			fmt.Printf("路径转换失败: %s, 错误: %v\n", fullPath, err)
+			continue
+		}
+		if strings.Contains(slashPath, "version.json") {
+			resultCh <- slashPath
+		}
+	}
 }
 
 func (a *App) walkDir(childPath string, resultCh chan<- string, wg *sync.WaitGroup) error {
