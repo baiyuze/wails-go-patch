@@ -74,6 +74,8 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		}
 		if info.IsDir() && (info.Name() != ".git" || info.Name() != "node_modules") {
 			wg.Add(1)
+			runtime.EventsEmit(a.ctx, "SCAN_PATH", match)
+
 			go a.walkDirConcurrent(match, resultCh, &wg)
 		} else {
 			cmsFilePaths = append(cmsFilePaths, match)
@@ -131,7 +133,6 @@ var sem = make(chan struct{}, maxWorkers)
 
 func (a *App) walkDirConcurrent(path string, resultCh chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	runtime.EventsEmit(a.ctx, "SCAN_PATH", path)
 	// 控制最大并发
 	sem <- struct{}{}
 	defer func() { <-sem }()
