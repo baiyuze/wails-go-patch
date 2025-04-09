@@ -72,6 +72,7 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		}
 		if info.IsDir() && (info.Name() != ".git" || info.Name() != "node_modules") {
 			wg.Add(1)
+			runtime.EventsEmit(a.ctx, "SCAN_PATH", match)
 			go a.walkDirConcurrent(match, resultCh, &wg)
 		} else {
 			cmsFilePaths = append(cmsFilePaths, match)
