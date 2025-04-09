@@ -72,7 +72,6 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		}
 		if info.IsDir() && (info.Name() != ".git" || info.Name() != "node_modules") {
 			wg.Add(1)
-			runtime.EventsEmit(a.ctx, "SCAN_PATH", match)
 			go a.walkDirConcurrent(match, resultCh, &wg)
 		} else {
 			cmsFilePaths = append(cmsFilePaths, match)
@@ -151,6 +150,7 @@ func (a *App) walkDirConcurrent(path string, resultCh chan<- string, wg *sync.Wa
 		if entry.IsDir() {
 			// 可选：跳过 node_modules、.git 等
 			if entry.Name() == "node_modules" || entry.Name() == ".git" {
+				runtime.EventsEmit(a.ctx, "SCAN_PATH", path)
 				continue
 			}
 			wg.Add(1)
