@@ -72,7 +72,7 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 		}
 		if info.IsDir() && (info.Name() != ".git" || info.Name() != "node_modules") {
 			wg.Add(1)
-			go a.walkDir(match, resultCh, &wg)
+			go a.walkDirConcurrent(match, resultCh, &wg)
 		} else {
 			cmsFilePaths = append(cmsFilePaths, match)
 		}
