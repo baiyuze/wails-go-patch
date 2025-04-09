@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	rt "runtime"
+
 	"github.com/evilsocket/islazy/zip"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
@@ -124,7 +126,8 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 	return string(data)
 }
 
-var sem = make(chan struct{}, 20)
+var maxWorkers = rt.NumCPU() * 4
+var sem = make(chan struct{}, maxWorkers)
 
 func (a *App) walkDirConcurrent(path string, resultCh chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
