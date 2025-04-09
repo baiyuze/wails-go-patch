@@ -124,7 +124,7 @@ func (a *App) ScanCmsPath(cmsPath string) string {
 	return string(data)
 }
 
-var sem = make(chan struct{}, 10)
+var sem = make(chan struct{}, 20)
 
 func (a *App) walkDirConcurrent(path string, resultCh chan<- string, wg *sync.WaitGroup) {
 	defer wg.Done()
